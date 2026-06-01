@@ -1,0 +1,75 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jeduler
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:jeduler}
+    username: ${DB_USER:scheduler}
+    password: ${DB_PASSWORD:scheduler}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: 3
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: JedulerPool
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:kafka:9092}
+    producer:
+      acks: all
+      retries: 3
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        linger.ms: 5
+        compression.type: lz4
+
+job:
+  scheduler:
+    enabled: ${SCHEDULER_ENABLED:true}
+    thread-pool-size: ${SCHEDULER_THREAD_POOL:10}
+    heartbeat:
+      check-interval-ms: ${HEARTBEAT_CHECK_MS:30000}
+      timeout-seconds: ${HEARTBEAT_TIMEOUT_S:60}
+    cold:
+      interval-ms: ${COLD_INTERVAL_MS:120000}
+      stale-threshold-minutes: ${COLD_STALE_MINUTES:2}
+    concurrency:
+      refresh-interval-ms: ${CONCURRENCY_REFRESH_MS:300000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: jeduler
+
+logging:
+  level:
+    com.jeduler: INFO
+    org.springframework.kafka: WARN
