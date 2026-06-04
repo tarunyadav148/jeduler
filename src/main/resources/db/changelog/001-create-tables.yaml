@@ -1,0 +1,167 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: jeduler
+      changes:
+        - createTable:
+            tableName: jfc_job_config
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: job_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: concurrency_rule
+                  type: jsonb
+                  defaultValue: '{}'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_retries
+                  type: integer
+                  defaultValueNumeric: 3
+                  constraints:
+                    nullable: false
+              - column:
+                  name: destination_type
+                  type: varchar(50)
+                  defaultValue: KAFKA
+                  constraints:
+                    nullable: false
+              - column:
+                  name: destination
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: destination_metadata
+                  type: jsonb
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 2
+      author: jeduler
+      changes:
+        - createTable:
+            tableName: jfc_job
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: job_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant
+                  type: integer
+              - column:
+                  name: priority
+                  type: integer
+                  defaultValueNumeric: 10
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(50)
+                  defaultValue: WAITING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload
+                  type: jsonb
+              - column:
+                  name: concurrency_control
+                  type: jsonb
+                  defaultValue: '{}'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: execution_count
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_failure_reason
+                  type: text
+              - column:
+                  name: job_processing_metadata
+                  type: jsonb
+              - column:
+                  name: payload_hash
+                  type: varchar(64)
+              - column:
+                  name: submit_time
+                  type: timestamp with time zone
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_updated
+                  type: timestamp with time zone
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: ALTER TABLE jfc_job ADD CONSTRAINT chk_status CHECK (status IN ('WAITING', 'PUBLISHED', 'PROCESSING', 'SUCCESSFUL', 'FAILED', 'FAILED_BY_SCHEDULER', 'RETRY', 'CANCELLED'))
+        - sql:
+            sql: ALTER TABLE jfc_job ADD CONSTRAINT chk_priority CHECK (priority >= 1)
+
+  - changeSet:
+      id: 3
+      author: jeduler
+      changes:
+        - createIndex:
+            indexName: idx_job_status_jobname
+            tableName: jfc_job
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: job_name
+        - createIndex:
+            indexName: idx_job_status_jobname_tenant
+            tableName: jfc_job
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: job_name
+              - column:
+                  name: tenant
+              - column:
+                  name: last_updated
+        - createIndex:
+            indexName: idx_job_submit_time
+            tableName: jfc_job
+            columns:
+              - column:
+                  name: submit_time
+        - sql:
+            sql: CREATE INDEX idx_job_scheduling ON jfc_job(job_name, status, priority, submit_time) WHERE status IN ('WAITING', 'RETRY')
+        - sql:
+            sql: CREATE UNIQUE INDEX idx_job_dedup ON jfc_job(job_name, tenant, payload_hash) WHERE status IN ('WAITING', 'PUBLISHED', 'PROCESSING', 'RETRY')

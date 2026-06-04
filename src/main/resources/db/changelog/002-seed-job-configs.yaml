@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: jeduler
+      changes:
+        - insert:
+            tableName: jfc_job_config
+            columns:
+              - column:
+                  name: job_name
+                  value: vulnerability-scan
+              - column:
+                  name: concurrency_rule
+                  value: '{"tenant": 3, "_global": 10, "scanType": 5}'
+              - column:
+                  name: max_retries
+                  valueNumeric: 3
+              - column:
+                  name: destination_type
+                  value: KAFKA
+              - column:
+                  name: destination
+                  value: job-dispatch.vulnerability-scan
+        - insert:
+            tableName: jfc_job_config
+            columns:
+              - column:
+                  name: job_name
+                  value: code-analysis
+              - column:
+                  name: concurrency_rule
+                  value: '{"tenant": 2, "_global": 5}'
+              - column:
+                  name: max_retries
+                  valueNumeric: 2
+              - column:
+                  name: destination_type
+                  value: KAFKA
+              - column:
+                  name: destination
+                  value: job-dispatch.code-analysis
+        - insert:
+            tableName: jfc_job_config
+            columns:
+              - column:
+                  name: job_name
+                  value: compliance-check
+              - column:
+                  name: concurrency_rule
+                  value: '{"_global": 3}'
+              - column:
+                  name: max_retries
+                  valueNumeric: 1
+              - column:
+                  name: destination_type
+                  value: KAFKA
+              - column:
+                  name: destination
+                  value: job-dispatch.compliance-check
